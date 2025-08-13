@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<title>我哋嘅婚禮相簿</title>
+<style>
+  body { font-family: "Microsoft JhengHei", sans-serif; background: #fff8f0; padding: 20px; }
+  h1, h2, h3 { text-align: center; }
+  .box { background: #fff; max-width: 420px; margin: auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  input, button, select, textarea { width: 100%; padding: 8px; margin: 6px 0; font-size: 16px; }
+  button { background: #ff6f91; color: white; border: none; cursor: pointer; border-radius:4px; }
+  button:hover { background: #ff4f70; }
+  img { max-width: 230px; margin: 5px; border-radius: 4px; }
+  .gallery { text-align:center; }
+  .admin-table { width: 100%; border-collapse: collapse; }
+  .admin-table th, .admin-table td { border: 1px solid #ccc; padding: 8px; }
+  .admin-table th { background: #ffe4ec; }
+</style>
+</head>
+<body>
+
+<h1>🎉 歡迎嚟到我哋嘅婚禮相簿 🎉</h1>
+<p style="text-align:center;"><a href="#" onclick="showAdminLogin()">🔑 新人登入（後台管理）</a></p>
+
+<!-- 登入畫面 -->
+<div id="loginBox" class="box">
+  <h3>請輸入姓名同專屬密碼</h3>
+  <input type="text" id="guestName" placeholder="你嘅姓名">
+  <input type="password" id="guestPass" placeholder="專屬密碼">
+  <button onclick="login()">入去睇相</button>
+  <p id="errorMsg" style="color:red;"></p>
+</div>
+
+<!-- 相簿及互動功能 -->
+<div id="albumBox" style="display:none;">
+  <h2 id="welcomeText"></h2>
+  <div id="photoList" class="gallery"></div>
+  <hr>
+
+  <h3>💬 留言祝福</h3>
+  <textarea id="comment" placeholder="寫低你嘅祝福..." rows="2"></textarea>
+  <button onclick="sendComment()">送出留言</button>
+  <div id="commentList" class="box" style="margin-top:10px; display:none;">
+    <h4>📜 大家嘅留言</h4>
+    <ul id="commentItems" style="list-style:none; padding-left:0;"></ul>
+  </div>
+
+  <hr>
+  <h3>🖨️ 申請沖曬</h3>
+  <label>揀尺寸：
+    <select id="printSize">
+      <option>4R</option>
+      <option>5R</option>
+      <option>8R</option>
+      <option>11R</option>
+    </select>
+  </label>
+  <label>數量：
+    <input type="number" id="printQty" min="1" value="1">
+  </label>
+  <input type="text" id="contact" placeholder="你嘅WhatsApp/電話">
+  <button onclick="sendPrintRequest()">提交沖曬申請</button>
+</div>
+
+<!-- 後台登入 -->
+<div id="adminLogin" class="box" style="display:none;">
+  <h3>管理員登入</h3>
+  <input type="password" id="adminPass" placeholder="輸入管理員密碼">
+  <button onclick="adminLogin()">登入後台</button>
+  <p id="adminError" style="color:red;"></p>
+</div>
+
+<!-- 後台面板 -->
+<div id="adminPanel" style="display:none;">
+  <h2>💼 後台管理</h2>
+
+  <h3>📜 留言管理</h3>
+  <table class="admin-table">
+    <thead><tr><th>留言內容</th><th>操作</th></tr></thead>
+    <tbody id="adminComments"></tbody>
+  </table>
+
+  <h3>🖨️ 沖曬申請管理</h3>
+  <table class="admin-table">
+    <thead><tr><th>尺寸</th><th>數量</th><th>聯絡方法</th><th>狀態</th></tr></thead>
+    <tbody id="adminPrints"></tbody>
+  </table>
+</div>
+
+<script>
+// ======== 賓客資料設定 ========
+const userPhotos = {
+  "陳小姐": { password: "GUEST001", photos: ["https://via.placeholder.com/300x200?text=陳小姐1","https://via.placeholder.com/300x200?text=陳小姐2"] },
+  "李先生": { password: "GUEST002", photos: ["https://via.placeholder.com/300x200?text=李先生1","https://via.placeholder.com/300x200?text=李先生2"] }
+};
+
+// ======== 全域保存資料 ========
+let allComments = []; // {name, text}
+let allPrints = [];   // {name, size, qty, contact, status}
+
+// ======== 賓客登入 ========
+function login() {
+  const name = document.getElementById("guestName").value.trim();
+  const pass = document.getElementById("guestPass").value.trim();
+  const errorMsg = document.getElementById("errorMsg");
+  errorMsg.textContent = "";
+
+  if (userPhotos[name] && userPhotos[name].password === pass) {
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("albumBox").style.display = "block";
+    document.getElementById("welcomeText").textContent = `😃 歡迎 ${name}！呢度係你嘅專屬相簿`;
+
+    const list = document.getElementById("photoList");
+    list.innerHTML = "";
+    userPhotos[name].photos.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      list.appendChild(img);
+    });
+
+    // 暫存賓客名（方便之後留言 & 沖曬申請）
+    document.getElementById("albumBox").dataset.guestName = name;
+
+  } else {
+    errorMsg.textContent = "❌ 姓名或密碼唔正確，請再試一次";
+  }
+}
+
+// ======== 留言功能 ========
+function sendComment() {
+  const name = document.getElementById("albumBox").dataset.guestName;
+  const comment = document.getElementById("comment").value.trim();
+  if (!comment) return alert("請輸入留言內容");
+
+  allComments.push({ name, text: comment });
+  const li = document.createElement("li");
+  li.textContent = name + "：" + comment;
+  document.getElementById("commentItems").appendChild(li);
+  document.getElementById("commentList").style.display = "block";
+  document.getElementById("comment").value = "";
+  alert("✅ 留言已送出！");
+}
+
+// ======== 沖曬申請功能 ========
+function sendPrintRequest() {
+  const name = document.getElementById("albumBox").dataset.guestName;
+  const size = document.getElementById("printSize").value;
+  const qty = document.getElementById("printQty").value;
+  const contact = document.getElementById("contact").value.trim();
+  if (!contact) return alert("請輸入聯絡方式");
+
+  allPrints.push({ name, size, qty, contact, status: "未處理" });
+  alert(`✅ 已收到你申請沖曬 ${qty} 張 ${size} 相，我哋會用 ${contact} 聯絡你！`);
+  document.getElementById("contact").value = "";
+}
+
+// ======== 後台登入 ========
+function showAdminLogin() {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("albumBox").style.display = "none";
+  document.getElementById("adminLogin").style.display = "block";
+}
+function adminLogin() {
+  const pwd = document.getElementById("adminPass").value.trim();
+  if (pwd === "admin123") {
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+    renderAdminData();
+  } else {
+    document.getElementById("adminError").textContent = "密碼錯誤！";
+  }
+}
+
+// ======== 後台資料顯示 ========
+function renderAdminData() {
+  const commentTable = document.getElementById("adminComments");
+  commentTable.innerHTML = "";
+  allComments.forEach((c, index) => {
+    commentTable.innerHTML += `<tr>
+      <td>${c.name}：${c.text}</td>
+      <td><button onclick="deleteComment(${index})">刪除</button></td>
+    </tr>`;
+  });
+
+  const printTable = document.getElementById("adminPrints");
+  printTable.innerHTML = "";
+  allPrints.forEach((p, index) => {
+    printTable.innerHTML += `<tr>
+      <td>${p.size}</td>
+      <td>${p.qty}</td>
+      <td>${p.contact}（${p.name}）</td>
+      <td>${p.status} <button onclick="markDone(${index})">完成</button></td>
+    </tr>`;
+  });
+}
+
+// ======== 後台操作 ========
+function deleteComment(index) {
+  allComments.splice(index, 1);
+  renderAdminData();
+}
+function markDone(index) {
+  allPrints[index].status = "已完成";
+  renderAdminData();
+}
+</script>
+
+</body>
+</html>
