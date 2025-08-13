@@ -1,209 +1,236 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-<meta charset="UTF-8">
-<title>我哋嘅婚禮相簿</title>
-<style>
-  body { font-family: "Microsoft JhengHei", sans-serif; background: #fff8f0; padding: 20px; }
-  h1, h2, h3 { text-align: center; }
-  .box { background: #fff; max-width: 420px; margin: auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  input, button, select, textarea { width: 100%; padding: 8px; margin: 6px 0; font-size: 16px; }
-  button { background: #ff6f91; color: white; border: none; cursor: pointer; border-radius:4px; }
-  button:hover { background: #ff4f70; }
-  img { max-width: 230px; margin: 5px; border-radius: 4px; }
-  .gallery { text-align:center; }
-  .admin-table { width: 100%; border-collapse: collapse; }
-  .admin-table th, .admin-table td { border: 1px solid #ccc; padding: 8px; }
-  .admin-table th { background: #ffe4ec; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>婚禮相簿分享 - Wedding Photo Sharing</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Landing Page -->
+    <div id="landingPage" class="view active">
+        <div class="container">
+            <div class="wedding-header">
+                <h1>💕 婚禮相簿分享</h1>
+                <p>歡迎嚟到我哋嘅婚禮相簿！</p>
+            </div>
+            
+            <div class="access-section">
+                <div class="guest-login">
+                    <h2>賓客登入</h2>
+                    <form id="guestLoginForm">
+                        <div class="form-group">
+                            <label for="guestName" class="form-label">請輸入你嘅名</label>
+                            <input type="text" id="guestName" class="form-control" placeholder="例如：陳小姐" required>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--full-width">入去睇相</button>
+                    </form>
+                </div>
 
-<h1>🎉 歡迎嚟到我哋嘅婚禮相簿 🎉</h1>
-<p style="text-align:center;"><a href="#" onclick="showAdminLogin()">🔑 新人登入（後台管理）</a></p>
+                <div class="qr-section">
+                    <h3>分享畀朋友</h3>
+                    <div class="qr-code">
+                        <div class="qr-placeholder">📱 掃一掃</div>
+                        <p>掃一掃即刻入去</p>
+                    </div>
+                </div>
 
-<!-- 登入畫面 -->
-<div id="loginBox" class="box">
-  <h3>請輸入姓名同專屬密碼</h3>
-  <input type="text" id="guestName" placeholder="你嘅姓名">
-  <input type="password" id="guestPass" placeholder="專屬密碼">
-  <button onclick="login()">入去睇相</button>
-  <p id="errorMsg" style="color:red;"></p>
-</div>
+                <div class="admin-access">
+                    <button id="adminLoginBtn" class="btn btn--outline">新人登入</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- 相簿及互動功能 -->
-<div id="albumBox" style="display:none;">
-  <h2 id="welcomeText"></h2>
-  <div id="photoList" class="gallery"></div>
-  <hr>
+    <!-- Photo Gallery -->
+    <div id="galleryPage" class="view">
+        <div class="gallery-header">
+            <div class="container">
+                <div class="header-content">
+                    <h1>婚禮相簿</h1>
+                    <div class="guest-info">
+                        <span id="currentGuestName"></span>
+                        <button id="logoutBtn" class="btn btn--sm btn--outline">登出</button>
+                    </div>
+                </div>
+                
+                <div class="category-tabs">
+                    <button class="tab-btn active" data-category="all">全部相片</button>
+                    <button class="tab-btn" data-category="ceremony">行禮儀式</button>
+                    <button class="tab-btn" data-category="reception">擺酒派對</button>
+                    <button class="tab-btn" data-category="group">大合照</button>
+                </div>
+            </div>
+        </div>
 
-  <h3>💬 留言祝福</h3>
-  <textarea id="comment" placeholder="寫低你嘅祝福..." rows="2"></textarea>
-  <button onclick="sendComment()">送出留言</button>
-  <div id="commentList" class="box" style="margin-top:10px; display:none;">
-    <h4>📜 大家嘅留言</h4>
-    <ul id="commentItems" style="list-style:none; padding-left:0;"></ul>
-  </div>
+        <div class="container">
+            <div class="photo-grid" id="photoGrid">
+                <!-- Photos will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
 
-  <hr>
-  <h3>🖨️ 申請沖曬</h3>
-  <label>揀尺寸：
-    <select id="printSize">
-      <option>4R</option>
-      <option>5R</option>
-      <option>8R</option>
-      <option>11R</option>
-    </select>
-  </label>
-  <label>數量：
-    <input type="number" id="printQty" min="1" value="1">
-  </label>
-  <input type="text" id="contact" placeholder="你嘅WhatsApp/電話">
-  <button onclick="sendPrintRequest()">提交沖曬申請</button>
-</div>
+    <!-- Admin Panel -->
+    <div id="adminPage" class="view">
+        <div class="container">
+            <div class="admin-header">
+                <h1>管理中心</h1>
+                <button id="adminLogoutBtn" class="btn btn--outline">登出</button>
+            </div>
 
-<!-- 後台登入 -->
-<div id="adminLogin" class="box" style="display:none;">
-  <h3>管理員登入</h3>
-  <input type="password" id="adminPass" placeholder="輸入管理員密碼">
-  <button onclick="adminLogin()">登入後台</button>
-  <p id="adminError" style="color:red;"></p>
-</div>
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" data-tab="prints">沖曬申請</button>
+                <button class="admin-tab-btn" data-tab="comments">留言管理</button>
+                <button class="admin-tab-btn" data-tab="upload">上傳相片</button>
+            </div>
 
-<!-- 後台面板 -->
-<div id="adminPanel" style="display:none;">
-  <h2>💼 後台管理</h2>
+            <div class="admin-content">
+                <!-- Print Requests -->
+                <div id="adminPrints" class="admin-section active">
+                    <h2>沖曬申請一覽</h2>
+                    <div id="printRequestsList" class="requests-list">
+                        <!-- Print requests will be loaded here -->
+                    </div>
+                </div>
 
-  <h3>📜 留言管理</h3>
-  <table class="admin-table">
-    <thead><tr><th>留言內容</th><th>操作</th></tr></thead>
-    <tbody id="adminComments"></tbody>
-  </table>
+                <!-- Comment Management -->
+                <div id="adminComments" class="admin-section">
+                    <h2>留言管理</h2>
+                    <div id="commentsList" class="comments-list">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
 
-  <h3>🖨️ 沖曬申請管理</h3>
-  <table class="admin-table">
-    <thead><tr><th>尺寸</th><th>數量</th><th>聯絡方法</th><th>狀態</th></tr></thead>
-    <tbody id="adminPrints"></tbody>
-  </table>
-</div>
+                <!-- Photo Upload -->
+                <div id="adminUpload" class="admin-section">
+                    <h2>上傳相片 (模擬)</h2>
+                    <div class="upload-form">
+                        <div class="form-group">
+                            <label class="form-label">揀相簿分類</label>
+                            <select class="form-control">
+                                <option value="ceremony">行禮儀式</option>
+                                <option value="reception">擺酒派對</option>
+                                <option value="group">大合照</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">相片標題</label>
+                            <input type="text" class="form-control" placeholder="輸入相片標題">
+                        </div>
+                        <button class="btn btn--primary">模擬上傳</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<script>
-// ======== 賓客資料設定 ========
-const userPhotos = {
-  "陳小姐": { password: "GUEST001", photos: ["https://via.placeholder.com/300x200?text=陳小姐1","https://via.placeholder.com/300x200?text=陳小姐2"] },
-  "李先生": { password: "GUEST002", photos: ["https://via.placeholder.com/300x200?text=李先生1","https://via.placeholder.com/300x200?text=李先生2"] }
-};
+    <!-- Photo Modal -->
+    <div id="photoModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div class="photo-viewer">
+                <img id="modalPhoto" src="" alt="">
+                <div class="photo-nav">
+                    <button id="prevPhoto" class="nav-btn">‹ 上一張</button>
+                    <button id="nextPhoto" class="nav-btn">下一張 ›</button>
+                </div>
+            </div>
+            <div class="photo-info">
+                <h3 id="modalPhotoTitle"></h3>
+                <div class="photo-actions">
+                    <button id="commentBtn" class="btn btn--secondary">💬 留言</button>
+                    <button id="printBtn" class="btn btn--primary">📷 要沖曬</button>
+                </div>
+                <div id="photoComments" class="comments-section">
+                    <!-- Comments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-// ======== 全域保存資料 ========
-let allComments = []; // {name, text}
-let allPrints = [];   // {name, size, qty, contact, status}
+    <!-- Comment Modal -->
+    <div id="commentModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <button class="modal-close">&times;</button>
+            <h3>畀個祝福留言啦！</h3>
+            <form id="commentForm">
+                <div class="form-group">
+                    <label class="form-label">你嘅祝福</label>
+                    <textarea id="commentText" class="form-control" rows="4" placeholder="寫低你嘅祝福..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--outline" id="cancelComment">取消</button>
+                    <button type="submit" class="btn btn--primary">send 咗佢</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-// ======== 賓客登入 ========
-function login() {
-  const name = document.getElementById("guestName").value.trim();
-  const pass = document.getElementById("guestPass").value.trim();
-  const errorMsg = document.getElementById("errorMsg");
-  errorMsg.textContent = "";
+    <!-- Print Request Modal -->
+    <div id="printModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <button class="modal-close">&times;</button>
+            <h3>申請沖曬相片</h3>
+            <form id="printForm">
+                <div class="form-group">
+                    <label class="form-label">相片尺寸</label>
+                    <select id="printSize" class="form-control" required>
+                        <option value="">請揀尺寸</option>
+                        <option value="4r">4R相 (HK$8)</option>
+                        <option value="5r">5R相 (HK$12)</option>
+                        <option value="8r">8R相 (HK$25)</option>
+                        <option value="11r">11R相 (HK$45)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">要幾多張？</label>
+                    <input type="number" id="printQuantity" class="form-control" min="1" max="20" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">你嘅WhatsApp/電話</label>
+                    <input type="tel" id="printPhone" class="form-control" placeholder="例如：+852 9123 4567" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">備註 (可選)</label>
+                    <textarea id="printNotes" class="form-control" rows="2" placeholder="有咩特別要求可以寫低"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--outline" id="cancelPrint">取消</button>
+                    <button type="submit" class="btn btn--primary">遞交申請</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-  if (userPhotos[name] && userPhotos[name].password === pass) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("albumBox").style.display = "block";
-    document.getElementById("welcomeText").textContent = `😃 歡迎 ${name}！呢度係你嘅專屬相簿`;
+    <!-- Admin Login Modal -->
+    <div id="adminLoginModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <button class="modal-close">&times;</button>
+            <h3>新人登入</h3>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label class="form-label">用戶名</label>
+                    <input type="text" id="adminUsername" class="form-control" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密碼</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--outline" id="cancelAdminLogin">取消</button>
+                    <button type="submit" class="btn btn--primary">登入</button>
+                </div>
+            </form>
+            <div class="admin-hint">
+                <small>提示：用戶名 admin，密碼 password</small>
+            </div>
+        </div>
+    </div>
 
-    const list = document.getElementById("photoList");
-    list.innerHTML = "";
-    userPhotos[name].photos.forEach(url => {
-      const img = document.createElement("img");
-      img.src = url;
-      list.appendChild(img);
-    });
-
-    // 暫存賓客名（方便之後留言 & 沖曬申請）
-    document.getElementById("albumBox").dataset.guestName = name;
-
-  } else {
-    errorMsg.textContent = "❌ 姓名或密碼唔正確，請再試一次";
-  }
-}
-
-// ======== 留言功能 ========
-function sendComment() {
-  const name = document.getElementById("albumBox").dataset.guestName;
-  const comment = document.getElementById("comment").value.trim();
-  if (!comment) return alert("請輸入留言內容");
-
-  allComments.push({ name, text: comment });
-  const li = document.createElement("li");
-  li.textContent = name + "：" + comment;
-  document.getElementById("commentItems").appendChild(li);
-  document.getElementById("commentList").style.display = "block";
-  document.getElementById("comment").value = "";
-  alert("✅ 留言已送出！");
-}
-
-// ======== 沖曬申請功能 ========
-function sendPrintRequest() {
-  const name = document.getElementById("albumBox").dataset.guestName;
-  const size = document.getElementById("printSize").value;
-  const qty = document.getElementById("printQty").value;
-  const contact = document.getElementById("contact").value.trim();
-  if (!contact) return alert("請輸入聯絡方式");
-
-  allPrints.push({ name, size, qty, contact, status: "未處理" });
-  alert(`✅ 已收到你申請沖曬 ${qty} 張 ${size} 相，我哋會用 ${contact} 聯絡你！`);
-  document.getElementById("contact").value = "";
-}
-
-// ======== 後台登入 ========
-function showAdminLogin() {
-  document.getElementById("loginBox").style.display = "none";
-  document.getElementById("albumBox").style.display = "none";
-  document.getElementById("adminLogin").style.display = "block";
-}
-function adminLogin() {
-  const pwd = document.getElementById("adminPass").value.trim();
-  if (pwd === "admin123") {
-    document.getElementById("adminLogin").style.display = "none";
-    document.getElementById("adminPanel").style.display = "block";
-    renderAdminData();
-  } else {
-    document.getElementById("adminError").textContent = "密碼錯誤！";
-  }
-}
-
-// ======== 後台資料顯示 ========
-function renderAdminData() {
-  const commentTable = document.getElementById("adminComments");
-  commentTable.innerHTML = "";
-  allComments.forEach((c, index) => {
-    commentTable.innerHTML += `<tr>
-      <td>${c.name}：${c.text}</td>
-      <td><button onclick="deleteComment(${index})">刪除</button></td>
-    </tr>`;
-  });
-
-  const printTable = document.getElementById("adminPrints");
-  printTable.innerHTML = "";
-  allPrints.forEach((p, index) => {
-    printTable.innerHTML += `<tr>
-      <td>${p.size}</td>
-      <td>${p.qty}</td>
-      <td>${p.contact}（${p.name}）</td>
-      <td>${p.status} <button onclick="markDone(${index})">完成</button></td>
-    </tr>`;
-  });
-}
-
-// ======== 後台操作 ========
-function deleteComment(index) {
-  allComments.splice(index, 1);
-  renderAdminData();
-}
-function markDone(index) {
-  allPrints[index].status = "已完成";
-  renderAdminData();
-}
-</script>
-
+    <script src="app.js"></script>
 </body>
 </html>
